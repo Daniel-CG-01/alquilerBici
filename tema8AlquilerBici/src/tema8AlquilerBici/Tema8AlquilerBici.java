@@ -23,15 +23,19 @@ import java.awt.Component;
 import javax.swing.table.TableModel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import javax.swing.JComboBox;
 
 //SINGLETON
 class ConnectionSingleton {
 	private static Connection con;
 	
 	public static Connection getConnection() throws SQLException{
-		String url="jdbc:mysql://127.0.0.1:3307/alquilerBici";
+		String url="jdbc:mysql://127.0.0.1:3306/alquilerBici";
+		String user="root";
+		String password="root";
+		/*String url="jdbc:mysql://127.0.0.1:3307/alquilerBici";
 		String user="alumno";
-		String password="alumno";
+		String password="alumno";*/
 		
 		if(con==null||con.isClosed()) {
 			con=DriverManager.getConnection(url,user, password);
@@ -112,24 +116,7 @@ public class Tema8AlquilerBici {
 		frmAlquilerBicis.getContentPane().add(lblAadirBici);
 		
 		JButton btnAddUsu = new JButton("Añadir");
-		btnAddUsu.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String nom=txtNom.getText();
-				int edad=Integer.parseInt(txtEdad.getText());
-				String cuenta=txtCuenta.getText();
-				//Crear nuevo usuario
-				try {
-					Connection con=ConnectionSingleton.getConnection();
-					PreparedStatement insPstmt=con.prepareStatement("INSERT INTO usuario VALUES (null, ?, ?, ?)");
-					insPstmt.setString(1, nom);
-					insPstmt.setInt(2, edad);
-					insPstmt.setString(3, cuenta);
-					
-				}catch(SQLException e2) {
-					JOptionPane.showMessageDialog(frmAlquilerBicis, e2.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
-				}
-			}
-		});
+		
 		btnAddUsu.setBounds(38, 228, 117, 25);
 		frmAlquilerBicis.getContentPane().add(btnAddUsu);
 
@@ -163,7 +150,44 @@ public class Tema8AlquilerBici {
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(frmAlquilerBicis, e.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
 		}
-		
+		//Funcionamiento botón añadir para usuario
+		btnAddUsu.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String nom=txtNom.getText();
+				int edad=Integer.parseInt(txtEdad.getText());
+				String cuenta=txtCuenta.getText();
+				//Crear nuevo usuario
+				try {
+					Connection con=ConnectionSingleton.getConnection();
+					PreparedStatement insPstmt=con.prepareStatement("INSERT INTO usuario VALUES (null, ?, ?, ?)");
+					insPstmt.setString(1, nom);
+					insPstmt.setInt(2, edad);
+					insPstmt.setString(3, cuenta);
+					insPstmt.executeUpdate();
+					insPstmt.close();
+
+					//Refrescar tabla usuario
+					modeloUsuario.setRowCount(0);
+					
+					Statement stmt=con.createStatement();
+					ResultSet rs=stmt.executeQuery("SELECT * FROM usuario");
+					Object[] row=new Object[4];
+					while(rs.next()) {
+						row[0] = rs.getString("idusuario");
+						row[1] = rs.getString("nombre");
+						row[2] = rs.getInt("edad");
+						row[3] = rs.getString("cuentaBancaria");
+						modeloUsuario.addRow(row);
+					}
+					rs.close();
+					stmt.close();
+					con.close();
+					JOptionPane.showMessageDialog(frmAlquilerBicis, "Usuario creado.");
+				}catch(SQLException eAddUser) {
+					JOptionPane.showMessageDialog(frmAlquilerBicis, eAddUser.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
 		tableUsuario = new JTable(modeloUsuario);
 		tableUsuario.setBounds(286, 55, 268, 149);
 		
@@ -204,12 +228,99 @@ public class Tema8AlquilerBici {
 			JOptionPane.showMessageDialog(frmAlquilerBicis, e4.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
 		}
 		
+		//Funcionamiento botón añadir para bici
+		btnAddBici.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					Connection con=ConnectionSingleton.getConnection();
+					PreparedStatement insPstmt=con.prepareStatement("INSERT INTO bici VALUES (null, 0)");
+					insPstmt.executeUpdate();
+					insPstmt.close();
+					
+					//Refrescar tabla bici
+					modeloBici.setRowCount(0);
+					Statement stmt = con.createStatement();
+					ResultSet rs = stmt.executeQuery("SELECT * FROM bici");
+					Object[] row = new Object[2];
+					while (rs.next()) {
+						row[0] = rs.getString("idbici");
+						row[1] = rs.getString("usuario");
+						modeloBici.addRow(row);
+					}
+					rs.close();
+					stmt.close();
+					con.close();
+					JOptionPane.showMessageDialog(frmAlquilerBicis, "Bici añadida.");
+				} catch (SQLException eAddBici) {
+					JOptionPane.showMessageDialog(frmAlquilerBicis, eAddBici.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+				}
+				
+			}
+		});
+		
 		tableBici = new JTable(modeloBici);
 		tableBici.setBounds(553, 55, 265, 152);
 		
 		JScrollPane scrollPaneB = new JScrollPane(tableBici);
 		scrollPaneB.setBounds(553, 55, 261, 150);
 		frmAlquilerBicis.getContentPane().add(scrollPaneB);
+		
+		JLabel lblAlquilar = new JLabel("Alquilar bici:");
+		lblAlquilar.setBounds(238, 233, 108, 14);
+		frmAlquilerBicis.getContentPane().add(lblAlquilar);
+		
+		JLabel lblU = new JLabel("Usuario:");
+		lblU.setBounds(238, 265, 62, 14);
+		frmAlquilerBicis.getContentPane().add(lblU);
+		
+		JComboBox comboBoxUsuario = new JComboBox();
+		comboBoxUsuario.setBounds(294, 261, 46, 22);
+		//Añadir usuarios al comboBox
+		try {
+			Connection con=ConnectionSingleton.getConnection();
+			Statement stmt=con.createStatement();
+			ResultSet rs=stmt.executeQuery("SELECT idusuario FROM usuario");
+			while(rs.next()) {
+				comboBoxUsuario.addItem(rs.getString("idusuario"));
+			}
+			rs.close();
+			stmt.close();
+			con.close();
+			
+		}catch(SQLException e) {
+			JOptionPane.showMessageDialog(frmAlquilerBicis, e.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+		}
+		frmAlquilerBicis.getContentPane().add(comboBoxUsuario);
+		
+		JLabel lblB = new JLabel("Bici:");
+		lblB.setBounds(354, 265, 46, 14);
+		frmAlquilerBicis.getContentPane().add(lblB);
+		
+		JComboBox comboBoxBici = new JComboBox();
+		//Añadir bicis al comboBox
+		try {
+			Connection con=ConnectionSingleton.getConnection();
+			Statement stmt=con.createStatement();
+			ResultSet rs=stmt.executeQuery("SELECT idbici FROM bici");
+			while(rs.next()) {
+				comboBoxBici.addItem(rs.getString("idbici"));
+			}
+			rs.close();
+			stmt.close();
+			con.close();
+		}catch(SQLException e) {
+			
+		}
+		comboBoxBici.setBounds(389, 261, 46, 22);
+		frmAlquilerBicis.getContentPane().add(comboBoxBici);
+		
+		JButton btnAlquilar = new JButton("Alquilar");
+		btnAlquilar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
+		btnAlquilar.setBounds(308, 293, 89, 23);
+		frmAlquilerBicis.getContentPane().add(btnAlquilar);
 
 	}
 }
