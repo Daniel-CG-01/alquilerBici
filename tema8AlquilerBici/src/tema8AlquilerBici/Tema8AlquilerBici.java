@@ -279,7 +279,7 @@ public class Tema8AlquilerBici {
 		try {
 			Connection con=ConnectionSingleton.getConnection();
 			Statement stmt=con.createStatement();
-			ResultSet rs=stmt.executeQuery("SELECT idusuario FROM usuario");
+			ResultSet rs=stmt.executeQuery("SELECT idusuario FROM usuario WHERE idusuario !=0");
 			while(rs.next()) {
 				comboBoxUsuario.addItem(rs.getString("idusuario"));
 			}
@@ -309,7 +309,7 @@ public class Tema8AlquilerBici {
 			stmt.close();
 			con.close();
 		}catch(SQLException e) {
-			
+			JOptionPane.showMessageDialog(frmAlquilerBicis, e.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
 		}
 		comboBoxBici.setBounds(389, 261, 46, 22);
 		frmAlquilerBicis.getContentPane().add(comboBoxBici);
@@ -317,6 +317,41 @@ public class Tema8AlquilerBici {
 		JButton btnAlquilar = new JButton("Alquilar");
 		btnAlquilar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				int idu=(Integer) comboBoxUsuario.getSelectedItem();
+				int idb=(Integer) comboBoxBici.getSelectedItem();
+				Connection con;
+				try {
+					con = ConnectionSingleton.getConnection();
+					PreparedStatement pstmt=con.prepareStatement("SELECT COUNT(*), idbici AS cantidadBicis FROM bici WHERE usuario=?");
+					pstmt.setInt(1, idu);
+					ResultSet rs=pstmt.executeQuery();
+					int cantidadBici=0;//la cantidad de bicis que está en uso por el usuario
+					int idbConsulta=0;//id de la bici para luego comprobar que no esté alquilada
+					while(rs.next()) {
+						cantidadBici=rs.getInt("cantidadBicis");
+						idbConsulta=rs.getInt("idbici");
+					}
+					rs.close();
+					pstmt.close();
+					//Realizar el alquilir sólo si el usuario no tiene ninguna bici alquilada
+					if(cantidadBici>0) {
+						JOptionPane.showMessageDialog(frmAlquilerBicis, "El usuario "+idu+" ya tiene una bici alquilada", "ERROR", JOptionPane.ERROR_MESSAGE);
+					}else if(idbConsulta!=idb){
+						JOptionPane.showMessageDialog(frmAlquilerBicis, "La bici "+idb+" ya está alquilada", "ERROR", JOptionPane.ERROR_MESSAGE);
+
+					}else {
+						PreparedStatement updPstmt=con.prepareStatement("UPDATE bici SET usuario=? WHERE idbici=?");
+						updPstmt.setInt(1, idu);
+						updPstmt.setInt(2, idb);
+						updPstmt.executeUpdate();
+						updPstmt.close();
+						con.close();
+						JOptionPane.showMessageDialog(frmAlquilerBicis, "Bici "+idb+" alquilada.");
+					}
+					
+				} catch (SQLException eupd) {
+					JOptionPane.showMessageDialog(frmAlquilerBicis, eupd.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+				}
 			}
 		});
 		btnAlquilar.setBounds(308, 293, 89, 23);
