@@ -78,7 +78,7 @@ public class Tema8AlquilerBici {
 	private void initialize() {
 		frmAlquilerBicis = new JFrame();
 		frmAlquilerBicis.getContentPane().setBackground(new Color(249, 240, 107));
-		frmAlquilerBicis.setTitle("Aplicación de Alquiler");
+		frmAlquilerBicis.setTitle("Alquiler de bicis");
 		frmAlquilerBicis.setBounds(100, 100, 852, 463);
 		frmAlquilerBicis.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmAlquilerBicis.getContentPane().setLayout(null);
